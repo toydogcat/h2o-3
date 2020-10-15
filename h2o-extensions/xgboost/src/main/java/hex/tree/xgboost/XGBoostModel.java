@@ -807,7 +807,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       Set<String> memo = new HashSet<>();
       
       CollectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
-              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i);
       treesFeatureInteractions[i] = currentTreeFeatureInteractions;
     }
 
@@ -823,7 +823,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public void CollectFeatureInteractions(SharedTreeNode node, List<SharedTreeNode> interactionPath,
                                   double currentGain, double currentCover, double pathProba, int depth, int deepening,
-                                  Map<String, FeatureInteraction> featureInteractions, Set<String> memo, int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+                                  Map<String, FeatureInteraction> featureInteractions, Set<String> memo, int maxInteractionDepth, int maxTreeDepth, int maxDeepening, int treeIndex) {
 
     if (node.isLeaf() || depth == maxTreeDepth) {
       return;
@@ -836,11 +836,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     double ppl = pathProba * (node.getLeftChild().getCover() / node.getCover());
     double ppr = pathProba * (node.getRightChild().getCover() / node.getCover());
 
-    FeatureInteraction featureInteraction = new FeatureInteraction(interactionPath, currentGain, currentCover, pathProba, depth, 1);
+    FeatureInteraction featureInteraction = new FeatureInteraction(interactionPath, currentGain, currentCover, pathProba, depth, 1, treeIndex);
 
     if ((depth < maxDeepening) || (maxDeepening < 0)) {
-      CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(), 0, 0, ppl, depth + 1, deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
-      CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(), 0, 0, ppr, depth + 1, deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+      CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(), 0, 0, ppl, depth + 1,
+              deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+      CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(), 0, 0, ppr, depth + 1,
+              deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
     }
 
     String path = FeatureInteraction.InteractionPathToStr(interactionPath, true, true);
@@ -861,13 +863,19 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       foundFI.averageFScoreWeighted = foundFI.FScoreWeighted / foundFI.FScore;
       foundFI.averageGain = foundFI.gain / foundFI.FScore;
       foundFI.expectedGain += currentGain * pathProba;
+      foundFI.treeDepth += depth;
+      foundFI.averageTreeDepth = foundFI.treeDepth / foundFI.FScore;
+      foundFI.treeIndex += treeIndex;
+      foundFI.averageTreeIndex = foundFI.treeIndex / foundFI.FScore;
     }
     
     if (interactionPath.size() - 1 == maxInteractionDepth)
       return;
     
-    CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppl, depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
-    CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr, depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+    CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppl,
+            depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+    CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr,
+            depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
   }
 
 

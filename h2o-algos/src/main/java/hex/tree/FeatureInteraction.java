@@ -17,8 +17,12 @@ public class FeatureInteraction {
     public double averageFScoreWeighted;
     public double averageGain;
     public double expectedGain;
+    public double treeIndex;
+    public double treeDepth;
+    public double averageTreeIndex;
+    public double averageTreeDepth;
     
-    public FeatureInteraction(List<SharedTreeNode> interactionPath, double gain, double cover, double pathProba, double depth, double FScore) {
+    public FeatureInteraction(List<SharedTreeNode> interactionPath, double gain, double cover, double pathProba, double depth, double FScore, double treeIndex) {
         this.name = InteractionPathToStr(interactionPath, false, true);
         this.depth = interactionPath.size() - 1;
         this.gain = gain;
@@ -28,6 +32,10 @@ public class FeatureInteraction {
         this.averageFScoreWeighted = this.FScoreWeighted / this.FScore;
         this.averageGain = this.gain / this.FScore;
         this.expectedGain = this.gain * pathProba;
+        this.treeIndex = treeIndex;
+        this.treeDepth = depth;
+        this.averageTreeIndex = this.treeIndex / this.FScore;
+        this.averageTreeDepth = this.treeDepth / this.FScore;
     }
 
     public static String InteractionPathToStr(final List<SharedTreeNode> interactionPath, final boolean encodePath, final boolean sortByFeature) {
@@ -60,6 +68,10 @@ public class FeatureInteraction {
                 leftFeatureInteraction.averageFScoreWeighted = leftFeatureInteraction.FScoreWeighted / leftFeatureInteraction.FScore;
                 leftFeatureInteraction.averageGain = leftFeatureInteraction.gain / leftFeatureInteraction.FScore;
                 leftFeatureInteraction.expectedGain += rightFeatureInteraction.expectedGain;
+                leftFeatureInteraction.treeIndex += rightFeatureInteraction.treeIndex;
+                leftFeatureInteraction.averageTreeIndex = leftFeatureInteraction.treeIndex / leftFeatureInteraction.FScore;
+                leftFeatureInteraction.treeDepth += rightFeatureInteraction.treeDepth;
+                leftFeatureInteraction.averageTreeDepth = leftFeatureInteraction.treeDepth / leftFeatureInteraction.FScore;
             } else {
                 leftFeatureInteractions.put(currEntry.getKey(), currEntry.getValue());
             }

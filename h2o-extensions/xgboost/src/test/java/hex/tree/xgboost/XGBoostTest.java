@@ -2025,6 +2025,8 @@ public class XGBoostTest extends TestUtil {
       assertEquals(capsuleInteraction.averageFScoreWeighted, 0.0635750962772786, epsilon);
       assertEquals(capsuleInteraction.averageGain, 9.37790891009861, epsilon);
       assertEquals(capsuleInteraction.expectedGain, 43.0394271689104, epsilon);
+      assertEquals(capsuleInteraction.averageTreeDepth, 4.2, 1e-1);
+      assertEquals(capsuleInteraction.averageTreeIndex, 25.78, 1e-2);
 
       FeatureInteraction psaInteraction = featureInteractionMap.get("PSA");
       assertEquals(psaInteraction.gain, 11264.2880798631, epsilon);
@@ -2033,6 +2035,8 @@ public class XGBoostTest extends TestUtil {
       assertEquals(psaInteraction.averageFScoreWeighted, 0.259532572690467, epsilon);
       assertEquals(psaInteraction.averageGain, 19.692811328432, epsilon);
       assertEquals(psaInteraction.expectedGain, 2323.51525060787, epsilon);
+      assertEquals(psaInteraction.averageTreeDepth, 3.55, 1e-2);
+      assertEquals(psaInteraction.averageTreeIndex, 27.29, 1e-2);
 
       // check some interactions of depth 1:
       FeatureInteraction psaPsaInteraction = featureInteractionMap.get("PSA|PSA");
@@ -2042,6 +2046,8 @@ public class XGBoostTest extends TestUtil {
       assertEquals(psaPsaInteraction.averageFScoreWeighted, 0.310397158540523, epsilon);
       assertEquals(psaPsaInteraction.averageGain, 41.6710669815298, epsilon);
       assertEquals(psaPsaInteraction.expectedGain, 2906.05613890999, epsilon);
+      assertEquals(psaPsaInteraction.averageTreeDepth, 3.66, 1e-2);
+      assertEquals(psaPsaInteraction.averageTreeIndex, 27.78, 1e-2);
 
       FeatureInteraction gleasonRaceInteraction = featureInteractionMap.get("GLEASON|RACE");
       assertEquals(gleasonRaceInteraction.gain, 2028.03059237, epsilon);
@@ -2050,6 +2056,8 @@ public class XGBoostTest extends TestUtil {
       assertEquals(gleasonRaceInteraction.averageFScoreWeighted, 0.329323308270677, epsilon);
       assertEquals(gleasonRaceInteraction.averageGain, 144.859328026429, epsilon);
       assertEquals(gleasonRaceInteraction.expectedGain, 815.892524956053, epsilon);
+      assertEquals(gleasonRaceInteraction.averageTreeDepth, 3.14, 1e-2);
+      assertEquals(gleasonRaceInteraction.averageTreeIndex, 14.5, 1e-1);
 
       // check some interactions of depth 2:
       FeatureInteraction volVolVolInteraction = featureInteractionMap.get("VOL|VOL|VOL");
@@ -2059,6 +2067,8 @@ public class XGBoostTest extends TestUtil {
       assertEquals(volVolVolInteraction.averageFScoreWeighted, 0.340398293029872, epsilon);
       assertEquals(volVolVolInteraction.averageGain, 86.4229397116487, epsilon);
       assertEquals(volVolVolInteraction.expectedGain, 740.075555944026, epsilon);
+      assertEquals(volVolVolInteraction.averageTreeDepth, 3.7, 1e-1);
+      assertEquals(volVolVolInteraction.averageTreeIndex, 22.03, 1e-2);
 
       FeatureInteraction capsuleDprosGleasonInteraction = featureInteractionMap.get("CAPSULE|DPROS|GLEASON");
       assertEquals(capsuleDprosGleasonInteraction.gain, 227.14370899, epsilon);
@@ -2067,6 +2077,8 @@ public class XGBoostTest extends TestUtil {
       assertEquals(capsuleDprosGleasonInteraction.averageFScoreWeighted, 0.0868421052631579, epsilon);
       assertEquals(capsuleDprosGleasonInteraction.averageGain, 56.7859272475, epsilon);
       assertEquals(capsuleDprosGleasonInteraction.expectedGain, 17.2918210555789, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageTreeDepth, 4.0, 1e-1);
+      assertEquals(capsuleDprosGleasonInteraction.averageTreeIndex, 28.5, 1e-1);
 
     } finally {
       Scope.exit();

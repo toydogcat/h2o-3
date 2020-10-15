@@ -14,6 +14,7 @@ public interface FeatureInteractionsCollector {
 
     void CollectFeatureInteractions(SharedTreeNode node, List<SharedTreeNode> interactionPath,
                                     double currentGain, double currentCover, double pathProba, int depth, int deepening,
-                                    Map<String, FeatureInteraction> featureInteractions, Set<String> memo, int maxInteractionDepth, int maxTreeDepth, int maxDeepening);
+                                    Map<String, FeatureInteraction> featureInteractions, Set<String> memo, 
+                                    int maxInteractionDepth, int maxTreeDepth, int maxDeepening, int treeIndex);
 
 }

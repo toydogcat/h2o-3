@@ -11,6 +11,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.FeatureInteraction;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
@@ -1992,6 +1993,80 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
       Scope.track_generic(model);
       assertEquals(Integer.MAX_VALUE, model._parms._max_depth);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testXGBoostFeatureInteractions() {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 0xDECAF;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      Map<String, FeatureInteraction> featureInteractionMap = model.getFeatureInteractions(2,100,-1);
+
+      assertEquals(featureInteractionMap.size(), 85);
+      
+      double epsilon = 1e-4;
+      // check some interactions of depth 0:
+      FeatureInteraction capsuleInteraction = featureInteractionMap.get("CAPSULE");
+      assertEquals(capsuleInteraction.gain, 768.988530628086, epsilon);
+      assertEquals(capsuleInteraction.FScore, 82.0, epsilon);
+      assertEquals(capsuleInteraction.FScoreWeighted, 5.21315789473684, epsilon);
+      assertEquals(capsuleInteraction.averageFScoreWeighted, 0.0635750962772786, epsilon);
+      assertEquals(capsuleInteraction.averageGain, 9.37790891009861, epsilon);
+      assertEquals(capsuleInteraction.expectedGain, 43.0394271689104, epsilon);
+
+      FeatureInteraction psaInteraction = featureInteractionMap.get("PSA");
+      assertEquals(psaInteraction.gain, 11264.2880798631, epsilon);
+      assertEquals(psaInteraction.FScore, 572.0, epsilon);
+      assertEquals(psaInteraction.FScoreWeighted, 148.452631578947, epsilon);
+      assertEquals(psaInteraction.averageFScoreWeighted, 0.259532572690467, epsilon);
+      assertEquals(psaInteraction.averageGain, 19.692811328432, epsilon);
+      assertEquals(psaInteraction.expectedGain, 2323.51525060787, epsilon);
+
+      // check some interactions of depth 1:
+      FeatureInteraction psaPsaInteraction = featureInteractionMap.get("PSA|PSA");
+      assertEquals(psaPsaInteraction.gain, 13584.7678359787, epsilon);
+      assertEquals(psaPsaInteraction.FScore, 326.0, epsilon);
+      assertEquals(psaPsaInteraction.FScoreWeighted, 101.189473684211, epsilon);
+      assertEquals(psaPsaInteraction.averageFScoreWeighted, 0.310397158540523, epsilon);
+      assertEquals(psaPsaInteraction.averageGain, 41.6710669815298, epsilon);
+      assertEquals(psaPsaInteraction.expectedGain, 2906.05613890999, epsilon);
+
+      FeatureInteraction gleasonRaceInteraction = featureInteractionMap.get("GLEASON|RACE");
+      assertEquals(gleasonRaceInteraction.gain, 2028.03059237, epsilon);
+      assertEquals(gleasonRaceInteraction.FScore, 14.0, epsilon);
+      assertEquals(gleasonRaceInteraction.FScoreWeighted, 4.61052631578947, epsilon);
+      assertEquals(gleasonRaceInteraction.averageFScoreWeighted, 0.329323308270677, epsilon);
+      assertEquals(gleasonRaceInteraction.averageGain, 144.859328026429, epsilon);
+      assertEquals(gleasonRaceInteraction.expectedGain, 815.892524956053, epsilon);
+
+      // check some interactions of depth 2:
+      FeatureInteraction volVolVolInteraction = featureInteractionMap.get("VOL|VOL|VOL");
+      assertEquals(volVolVolInteraction.gain, 3197.648769331, epsilon);
+      assertEquals(volVolVolInteraction.FScore, 37.0, epsilon);
+      assertEquals(volVolVolInteraction.FScoreWeighted, 12.5947368421053, epsilon);
+      assertEquals(volVolVolInteraction.averageFScoreWeighted, 0.340398293029872, epsilon);
+      assertEquals(volVolVolInteraction.averageGain, 86.4229397116487, epsilon);
+      assertEquals(volVolVolInteraction.expectedGain, 740.075555944026, epsilon);
+
+      FeatureInteraction capsuleDprosGleasonInteraction = featureInteractionMap.get("CAPSULE|DPROS|GLEASON");
+      assertEquals(capsuleDprosGleasonInteraction.gain, 227.14370899, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.FScore, 4.0, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.FScoreWeighted, 0.347368421052632, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageFScoreWeighted, 0.0868421052631579, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.averageGain, 56.7859272475, epsilon);
+      assertEquals(capsuleDprosGleasonInteraction.expectedGain, 17.2918210555789, epsilon);
 
     } finally {
       Scope.exit();

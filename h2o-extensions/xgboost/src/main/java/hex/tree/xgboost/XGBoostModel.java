@@ -5,11 +5,14 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.*;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.FeatureInteraction;
+import hex.tree.FeatureInteractionsCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
@@ -32,7 +35,7 @@ import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -671,20 +674,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     final RegTreeNode[] treeNodes = treesInGroup[treeNumber].getNodes();
+    final RegTreeNodeStat[] treeNodeStats = treesInGroup[treeNumber].getStats();
     assert treeNodes.length >= 1;
 
     SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
     final SharedTreeSubgraph sharedTreeSubgraph = sharedTreeGraph.makeSubgraph(_output._training_metrics._description);
 
     final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
-    constructSubgraph(treeNodes, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
+    constructSubgraph(treeNodes, treeNodeStats, sharedTreeSubgraph.makeRootNode(), 0, sharedTreeSubgraph, featureProperties, true); // Root node is at index 0
     return sharedTreeGraph;
   }
 
-  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+  private static void constructSubgraph(final RegTreeNode[] xgBoostNodes, final RegTreeNodeStat[] xgBoostNodeStats, final SharedTreeNode sharedTreeNode,
                                         final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
                                         final XGBoostUtils.FeatureProperties featureProperties, boolean inclusiveNA) {
     final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
+    final RegTreeNodeStat xgBoostNodeStat = xgBoostNodeStats[nodeIndex];
     // Not testing for NaNs, as SharedTreeNode uses NaNs as default values.
     //No domain set, as the structure mimics XGBoost's tree, which is numeric-only
     if (featureProperties._oneHotEncoded[xgBoostNode.getSplitIndex()]) {
@@ -697,11 +702,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
+    sharedTreeNode.setCover(xgBoostNodeStat.getCover());
+    sharedTreeNode.setGain(xgBoostNodeStat.getGain());  
+    sharedTreeNode.setWeight(xgBoostNodeStat.getWeight());
+    
     if (!xgBoostNode.isLeaf()) {
       sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), featureProperties._names[xgBoostNode.getSplitIndex()]);
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, xgBoostNodeStats, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
               xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, featureProperties, xgBoostNode.default_left());
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, xgBoostNodeStats, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
           xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, featureProperties, !xgBoostNode.default_left());
     }
   }
@@ -783,5 +792,83 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
     XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
+
+  @Override
+  public Map<String, FeatureInteraction> getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+
+    Map<String, FeatureInteraction>[] treesFeatureInteractions = new HashMap[this._parms._ntrees];
+    
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      Map<String, FeatureInteraction> currentTreeFeatureInteractions = new HashMap();
+      SharedTreeGraph sharedTreeGraph = convert(i, null);
+      assert sharedTreeGraph.subgraphArray.size() == 1;
+      SharedTreeSubgraph tree = sharedTreeGraph.subgraphArray.get(0);
+      List<SharedTreeNode> interactionPath = new ArrayList<>();
+      Set<String> memo = new HashSet<>();
+      
+      CollectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
+              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+      treesFeatureInteractions[i] = currentTreeFeatureInteractions;
+    }
+
+    Map<String, FeatureInteraction> featureInteractions = new HashMap<>();
+    
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      FeatureInteraction.merge(featureInteractions, treesFeatureInteractions[i]);
+   }
+    
+    return featureInteractions;
+  }
+  
+  @Override
+  public void CollectFeatureInteractions(SharedTreeNode node, List<SharedTreeNode> interactionPath,
+                                  double currentGain, double currentCover, double pathProba, int depth, int deepening,
+                                  Map<String, FeatureInteraction> featureInteractions, Set<String> memo, int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+
+    if (node.isLeaf() || depth == maxTreeDepth) {
+      return;
+    }
+    
+    interactionPath.add(node);
+    currentGain += node.getGain();
+    currentCover += node.getCover();
+    
+    double ppl = pathProba * (node.getLeftChild().getCover() / node.getCover());
+    double ppr = pathProba * (node.getRightChild().getCover() / node.getCover());
+
+    FeatureInteraction featureInteraction = new FeatureInteraction(interactionPath, currentGain, currentCover, pathProba, depth, 1);
+
+    if ((depth < maxDeepening) || (maxDeepening < 0)) {
+      CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(), 0, 0, ppl, depth + 1, deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+      CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(), 0, 0, ppr, depth + 1, deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+    }
+
+    String path = FeatureInteraction.InteractionPathToStr(interactionPath, true, true);
+
+    FeatureInteraction foundFI = featureInteractions.get(featureInteraction.name);
+    if (foundFI == null) {
+      featureInteractions.put(featureInteraction.name, featureInteraction);
+      memo.add(path);
+    } else {
+      if (memo.contains(path)) {
+        return;
+      }
+      memo.add(path);
+      foundFI.gain += currentGain;
+      foundFI.cover += currentCover;
+      foundFI.FScore += 1;
+      foundFI.FScoreWeighted += pathProba;
+      foundFI.averageFScoreWeighted = foundFI.FScoreWeighted / foundFI.FScore;
+      foundFI.averageGain = foundFI.gain / foundFI.FScore;
+      foundFI.expectedGain += currentGain * pathProba;
+    }
+    
+    if (interactionPath.size() - 1 == maxInteractionDepth)
+      return;
+    
+    CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppl, depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+    CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr, depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening);
+  }
+
 
 }

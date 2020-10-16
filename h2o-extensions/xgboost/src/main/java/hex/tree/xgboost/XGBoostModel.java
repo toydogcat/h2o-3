@@ -872,7 +872,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (interactionPath.size() - 1 == maxInteractionDepth)
       return;
     
-    CollectFeatureInteractions(node.getLeftChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppl,
+    foundFI = featureInteractions.get(featureInteraction.name);
+    SharedTreeNode leftChild = node.getLeftChild();
+    if (leftChild.isLeaf() && deepening == 0) {
+      foundFI.sumLeafValuesLeft += leftChild.getLeafValue();
+      foundFI.sumLeafCoversLeft += leftChild.getCover();
+      foundFI.hasLeafStatistics = true;
+    }
+
+    SharedTreeNode rightChild = node.getRightChild();
+    if (rightChild.isLeaf() && deepening == 0) {
+      foundFI.sumLeafValuesRight += rightChild.getLeafValue();
+      foundFI.sumLeafCoversRight += rightChild.getCover();
+      foundFI.hasLeafStatistics = true;
+    }
+    
+    CollectFeatureInteractions(leftChild, new ArrayList<>(interactionPath), currentGain, currentGain, ppl,
             depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
     CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr,
             depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);

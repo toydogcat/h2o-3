@@ -21,6 +21,12 @@ public class FeatureInteraction {
     public double treeDepth;
     public double averageTreeIndex;
     public double averageTreeDepth;
+
+    public boolean hasLeafStatistics;
+    public double sumLeafValuesLeft;
+    public double sumLeafCoversLeft;
+    public double sumLeafValuesRight;
+    public double sumLeafCoversRight;
     
     public FeatureInteraction(List<SharedTreeNode> interactionPath, double gain, double cover, double pathProba, double depth, double FScore, double treeIndex) {
         this.name = InteractionPathToStr(interactionPath, false, true);
@@ -36,6 +42,7 @@ public class FeatureInteraction {
         this.treeDepth = depth;
         this.averageTreeIndex = this.treeIndex / this.FScore;
         this.averageTreeDepth = this.treeDepth / this.FScore;
+        hasLeafStatistics = false;
     }
 
     public static String InteractionPathToStr(final List<SharedTreeNode> interactionPath, final boolean encodePath, final boolean sortByFeature) {
@@ -72,6 +79,10 @@ public class FeatureInteraction {
                 leftFeatureInteraction.averageTreeIndex = leftFeatureInteraction.treeIndex / leftFeatureInteraction.FScore;
                 leftFeatureInteraction.treeDepth += rightFeatureInteraction.treeDepth;
                 leftFeatureInteraction.averageTreeDepth = leftFeatureInteraction.treeDepth / leftFeatureInteraction.FScore;
+                leftFeatureInteraction.sumLeafCoversRight += rightFeatureInteraction.sumLeafCoversRight;
+                leftFeatureInteraction.sumLeafCoversLeft += rightFeatureInteraction.sumLeafCoversLeft;
+                leftFeatureInteraction.sumLeafValuesRight += rightFeatureInteraction.sumLeafValuesRight;
+                leftFeatureInteraction.sumLeafValuesLeft += rightFeatureInteraction.sumLeafValuesLeft;
             } else {
                 leftFeatureInteractions.put(currEntry.getKey(), currEntry.getValue());
             }

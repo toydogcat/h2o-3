@@ -2080,6 +2080,13 @@ public class XGBoostTest extends TestUtil {
       assertEquals(capsuleDprosGleasonInteraction.averageTreeDepth, 4.0, 1e-1);
       assertEquals(capsuleDprosGleasonInteraction.averageTreeIndex, 28.5, 1e-1);
 
+      // check Leaf Statistics
+      FeatureInteraction psaVolInteraction = featureInteractionMap.get("PSA|VOL");
+      assertEquals(psaVolInteraction.sumLeafValuesLeft, -0.467761263, epsilon);
+      assertEquals(psaVolInteraction.sumLeafValuesRight, 0.56550011, epsilon);
+      assertEquals(psaVolInteraction.sumLeafCoversLeft, 2.0, 1e-1);
+      assertEquals(psaVolInteraction.sumLeafCoversRight, 2.0, 1e-1);
+      
     } finally {
       Scope.exit();
     }

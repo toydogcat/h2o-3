@@ -867,6 +867,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       foundFI.averageTreeDepth = foundFI.treeDepth / foundFI.FScore;
       foundFI.treeIndex += treeIndex;
       foundFI.averageTreeIndex = foundFI.treeIndex / foundFI.FScore;
+      foundFI.splitValueHistogram.merge(featureInteraction.splitValueHistogram);
     }
     
     if (interactionPath.size() - 1 == maxInteractionDepth)

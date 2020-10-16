@@ -2080,12 +2080,52 @@ public class XGBoostTest extends TestUtil {
       assertEquals(capsuleDprosGleasonInteraction.averageTreeDepth, 4.0, 1e-1);
       assertEquals(capsuleDprosGleasonInteraction.averageTreeIndex, 28.5, 1e-1);
 
-      // check Leaf Statistics
+      // check leaf statistics
       FeatureInteraction psaVolInteraction = featureInteractionMap.get("PSA|VOL");
       assertEquals(psaVolInteraction.sumLeafValuesLeft, -0.467761263, epsilon);
       assertEquals(psaVolInteraction.sumLeafValuesRight, 0.56550011, epsilon);
       assertEquals(psaVolInteraction.sumLeafCoversLeft, 2.0, 1e-1);
       assertEquals(psaVolInteraction.sumLeafCoversRight, 2.0, 1e-1);
+
+      // check split value histograms
+      // CAPSULE
+      assertEquals(capsuleInteraction.splitValueHistogram.get(0.5).toInteger(), 82.0, 1e-1);
+      assertEquals(capsuleInteraction.splitValueHistogram.entrySet().size(), 1);
+      // DCAPS
+      assertEquals(featureInteractionMap.get("DCAPS").splitValueHistogram.get(1.5).toInteger(), 42.0, 1e-1);
+      assertEquals(featureInteractionMap.get("DCAPS").splitValueHistogram.entrySet().size(), 1);
+      // RACE
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(0.5).toInteger(), 18.0, 1e-1);
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(1.5).toInteger(), 62.0, 1e-1);
+      assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.entrySet().size(), 2);
+      // GLEASON
+      double[] expectedKeys = new double[] {2.5, 3.0, 5.5, 6.5, 7, 7.5, 8.5};
+      double[] expectedValues = new double[] {2.0, 3.0, 44.0, 31.0, 1.0, 21.0, 14.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.entrySet().size(), 7);
+      // DPROS
+      expectedKeys = new double[] {1.5, 2.0, 2.5, 3.0, 3.5};
+      expectedValues = new double[] {67.0, 3.0, 63.0, 12.0, 36.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.entrySet().size(), 5);
+      // VOL
+      expectedKeys = new double[] {5.75, 11.25, 13.75, 14.5, 15.75};
+      expectedValues = new double[] {1.0, 1.0, 1.0, 2.0, 1.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.entrySet().size(), 180);
+      // PSA
+      expectedKeys = new double[] {1.5, 1.75, 3.25, 5.25, 8.75};
+      expectedValues = new double[] {1.0, 4.0, 4.0, 3.0, 2.0};
+      for (int i = 0; i < expectedKeys.length; i++) {
+        assertEquals(psaInteraction.splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
+      }
+      assertEquals(psaInteraction.splitValueHistogram.entrySet().size(), 261);
       
     } finally {
       Scope.exit();

@@ -28,6 +28,8 @@ public class FeatureInteraction {
     public double sumLeafValuesRight;
     public double sumLeafCoversRight;
     
+    public SplitValueHistogram splitValueHistogram;
+    
     public FeatureInteraction(List<SharedTreeNode> interactionPath, double gain, double cover, double pathProba, double depth, double FScore, double treeIndex) {
         this.name = InteractionPathToStr(interactionPath, false, true);
         this.depth = interactionPath.size() - 1;
@@ -42,7 +44,12 @@ public class FeatureInteraction {
         this.treeDepth = depth;
         this.averageTreeIndex = this.treeIndex / this.FScore;
         this.averageTreeDepth = this.treeDepth / this.FScore;
-        hasLeafStatistics = false;
+        this.hasLeafStatistics = false;
+        this.splitValueHistogram = new SplitValueHistogram();
+        
+        if (this.depth == 0) {
+            splitValueHistogram.addValue(interactionPath.get(0).getSplitValue(), 1);
+        }
     }
 
     public static String InteractionPathToStr(final List<SharedTreeNode> interactionPath, final boolean encodePath, final boolean sortByFeature) {
@@ -83,6 +90,7 @@ public class FeatureInteraction {
                 leftFeatureInteraction.sumLeafCoversLeft += rightFeatureInteraction.sumLeafCoversLeft;
                 leftFeatureInteraction.sumLeafValuesRight += rightFeatureInteraction.sumLeafValuesRight;
                 leftFeatureInteraction.sumLeafValuesLeft += rightFeatureInteraction.sumLeafValuesLeft;
+                leftFeatureInteraction.splitValueHistogram.merge(rightFeatureInteraction.splitValueHistogram);
             } else {
                 leftFeatureInteractions.put(currEntry.getKey(), currEntry.getValue());
             }

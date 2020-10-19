@@ -12,6 +12,7 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.FeatureInteraction;
+import hex.tree.FeatureInteractions;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
@@ -2012,7 +2013,7 @@ public class XGBoostTest extends TestUtil {
       parms._seed = 0xDECAF;
 
       XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
-      Map<String, FeatureInteraction> featureInteractionMap = model.getFeatureInteractions(2,100,-1);
+      FeatureInteractions featureInteractionMap = model.getFeatureInteractions(2,100,-1);
 
       assertEquals(featureInteractionMap.size(), 85);
       
@@ -2099,33 +2100,50 @@ public class XGBoostTest extends TestUtil {
       assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.get(1.5).toInteger(), 62.0, 1e-1);
       assertEquals(featureInteractionMap.get("RACE").splitValueHistogram.entrySet().size(), 2);
       // GLEASON
-      double[] expectedKeys = new double[] {2.5, 3.0, 5.5, 6.5, 7, 7.5, 8.5};
-      double[] expectedValues = new double[] {2.0, 3.0, 44.0, 31.0, 1.0, 21.0, 14.0};
+      double[] expectedKeys = new double[]{2.5, 3.0, 5.5, 6.5, 7, 7.5, 8.5};
+      double[] expectedValues = new double[]{2.0, 3.0, 44.0, 31.0, 1.0, 21.0, 14.0};
       for (int i = 0; i < expectedKeys.length; i++) {
         assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
       }
       assertEquals(featureInteractionMap.get("GLEASON").splitValueHistogram.entrySet().size(), 7);
       // DPROS
-      expectedKeys = new double[] {1.5, 2.0, 2.5, 3.0, 3.5};
-      expectedValues = new double[] {67.0, 3.0, 63.0, 12.0, 36.0};
+      expectedKeys = new double[]{1.5, 2.0, 2.5, 3.0, 3.5};
+      expectedValues = new double[]{67.0, 3.0, 63.0, 12.0, 36.0};
       for (int i = 0; i < expectedKeys.length; i++) {
         assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
       }
       assertEquals(featureInteractionMap.get("DPROS").splitValueHistogram.entrySet().size(), 5);
       // VOL
-      expectedKeys = new double[] {5.75, 11.25, 13.75, 14.5, 15.75};
-      expectedValues = new double[] {1.0, 1.0, 1.0, 2.0, 1.0};
+      expectedKeys = new double[]{5.75, 11.25, 13.75, 14.5, 15.75};
+      expectedValues = new double[]{1.0, 1.0, 1.0, 2.0, 1.0};
       for (int i = 0; i < expectedKeys.length; i++) {
         assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
       }
       assertEquals(featureInteractionMap.get("VOL").splitValueHistogram.entrySet().size(), 180);
       // PSA
-      expectedKeys = new double[] {1.5, 1.75, 3.25, 5.25, 8.75};
-      expectedValues = new double[] {1.0, 4.0, 4.0, 3.0, 2.0};
+      expectedKeys = new double[]{1.5, 1.75, 3.25, 5.25, 8.75};
+      expectedValues = new double[]{1.0, 4.0, 4.0, 3.0, 2.0};
       for (int i = 0; i < expectedKeys.length; i++) {
         assertEquals(psaInteraction.splitValueHistogram.get(expectedKeys[i]).toInteger(), expectedValues[i], 1e-1);
       }
       assertEquals(psaInteraction.splitValueHistogram.entrySet().size(), 261);
+
+      TwoDimTable[] featureInteractionsTables = featureInteractionMap.getFeatureInteractions();
+      TwoDimTable leafStatisticsTable = featureInteractionMap.getLeafStatisticsTable();
+      TwoDimTable[] getSplitValuesHistograms = featureInteractionMap.getSplitValueHistograms();
+
+      assertEquals(featureInteractionsTables.length, 3);
+      assertEquals(featureInteractionsTables[0].getRowDim(), 7);
+      assertEquals(featureInteractionsTables[1].getRowDim(), 25);
+      assertEquals(featureInteractionsTables[2].getRowDim(), 53);
+      assertEquals(leafStatisticsTable.getRowDim(), 1);
+      assertEquals(getSplitValuesHistograms[0].getRowDim(), 261);
+      assertEquals(getSplitValuesHistograms[1].getRowDim(), 180);
+      assertEquals(getSplitValuesHistograms[2].getRowDim(), 1);
+      assertEquals(getSplitValuesHistograms[3].getRowDim(), 5);
+      assertEquals(getSplitValuesHistograms[4].getRowDim(), 7);
+      assertEquals(getSplitValuesHistograms[5].getRowDim(), 2);
+      assertEquals(getSplitValuesHistograms[6].getRowDim(), 1);
       
     } finally {
       Scope.exit();

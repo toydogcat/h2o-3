@@ -12,6 +12,7 @@ import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.FeatureInteraction;
+import hex.tree.FeatureInteractions;
 import hex.tree.FeatureInteractionsCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
@@ -794,7 +795,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  public Map<String, FeatureInteraction> getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+  public FeatureInteractions getFeatureInteractions(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
 
     Map<String, FeatureInteraction>[] treesFeatureInteractions = new HashMap[this._parms._ntrees];
     
@@ -811,10 +812,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       treesFeatureInteractions[i] = currentTreeFeatureInteractions;
     }
 
-    Map<String, FeatureInteraction> featureInteractions = new HashMap<>();
+    FeatureInteractions featureInteractions = new FeatureInteractions();
     
     for (int i = 0; i < this._parms._ntrees; i++) {
-      FeatureInteraction.merge(featureInteractions, treesFeatureInteractions[i]);
+      FeatureInteractions.merge(featureInteractions, treesFeatureInteractions[i]);
    }
     
     return featureInteractions;

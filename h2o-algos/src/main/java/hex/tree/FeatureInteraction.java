@@ -1,10 +1,8 @@
 package hex.tree;
 
 import hex.genmodel.algos.tree.SharedTreeNode;
-
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 public class FeatureInteraction {
 
@@ -68,32 +66,5 @@ public class FeatureInteraction {
         }
         
         return sb.toString();
-    }
-    
-    public static void merge(Map<String, FeatureInteraction> leftFeatureInteractions, Map<String, FeatureInteraction> rightFeatureInteractions) {
-        for (Map.Entry<String,FeatureInteraction> currEntry : rightFeatureInteractions.entrySet()) {
-            if (leftFeatureInteractions.containsKey(currEntry.getKey())) {
-                FeatureInteraction leftFeatureInteraction = leftFeatureInteractions.get(currEntry.getKey());
-                FeatureInteraction rightFeatureInteraction = currEntry.getValue();
-                leftFeatureInteraction.gain += rightFeatureInteraction.gain;
-                leftFeatureInteraction.cover += rightFeatureInteraction.cover;
-                leftFeatureInteraction.FScore += rightFeatureInteraction.FScore;
-                leftFeatureInteraction.FScoreWeighted += rightFeatureInteraction.FScoreWeighted;
-                leftFeatureInteraction.averageFScoreWeighted = leftFeatureInteraction.FScoreWeighted / leftFeatureInteraction.FScore;
-                leftFeatureInteraction.averageGain = leftFeatureInteraction.gain / leftFeatureInteraction.FScore;
-                leftFeatureInteraction.expectedGain += rightFeatureInteraction.expectedGain;
-                leftFeatureInteraction.treeIndex += rightFeatureInteraction.treeIndex;
-                leftFeatureInteraction.averageTreeIndex = leftFeatureInteraction.treeIndex / leftFeatureInteraction.FScore;
-                leftFeatureInteraction.treeDepth += rightFeatureInteraction.treeDepth;
-                leftFeatureInteraction.averageTreeDepth = leftFeatureInteraction.treeDepth / leftFeatureInteraction.FScore;
-                leftFeatureInteraction.sumLeafCoversRight += rightFeatureInteraction.sumLeafCoversRight;
-                leftFeatureInteraction.sumLeafCoversLeft += rightFeatureInteraction.sumLeafCoversLeft;
-                leftFeatureInteraction.sumLeafValuesRight += rightFeatureInteraction.sumLeafValuesRight;
-                leftFeatureInteraction.sumLeafValuesLeft += rightFeatureInteraction.sumLeafValuesLeft;
-                leftFeatureInteraction.splitValueHistogram.merge(rightFeatureInteraction.splitValueHistogram);
-            } else {
-                leftFeatureInteractions.put(currEntry.getKey(), currEntry.getValue());
-            }
-        }
     }
 }

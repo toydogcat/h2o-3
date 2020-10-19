@@ -2145,6 +2145,11 @@ public class XGBoostTest extends TestUtil {
       assertEquals(getSplitValuesHistograms[5].getRowDim(), 2);
       assertEquals(getSplitValuesHistograms[6].getRowDim(), 1);
       
+      TwoDimTable[][] overallFeatureInteractionsTable = model.getFeatureInteractionsTable(2,100,-1);
+      assertEquals(overallFeatureInteractionsTable[0].length, 3);
+      assertEquals(overallFeatureInteractionsTable[1].length, 1);
+      assertEquals(overallFeatureInteractionsTable[2].length, 7);
+      
     } finally {
       Scope.exit();
     }

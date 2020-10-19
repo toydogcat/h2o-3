@@ -2997,4 +2997,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean isDistributionHuber() {
     return _parms._distribution == DistributionFamily.huber;
   }
+
+  public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    return null;
+  }
 }

@@ -12,6 +12,7 @@ import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -172,6 +173,24 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       partialDependence = new PartialDependence(Key.<PartialDependence>make());
     s.fillImpl(partialDependence); //fill frame_id/model_id/nbins/etc.
     return new JobV3(partialDependence.execImpl());
+  }
+
+  @SuppressWarnings("unused")
+  public FeatureInteractionV3 makeFeatureInteraction(int version, FeatureInteractionV3 s) {
+    Model model = getFromDKV("key", s.model_id.key());
+    TwoDimTable[][] FIs = model.getFeatureInteractionsTable(s.max_interaction_depth, s.max_tree_depth, s.max_deepening);
+
+    s.feature_interaction = new TwoDimTableV3[FIs[0].length + FIs[2].length + 1];
+    
+    for (int i = 0; i < FIs[0].length; i++) {
+      s.feature_interaction[i] = new TwoDimTableV3().fillFromImpl(FIs[0][i]);
+    }
+    s.feature_interaction[FIs[0].length] = new TwoDimTableV3().fillFromImpl(FIs[1][0]);
+    for (int i = 0; i < FIs[2].length; i++) {
+      s.feature_interaction[i + FIs[0].length + 1] = new TwoDimTableV3().fillFromImpl(FIs[2][i]);
+    }
+    
+    return s;
   }
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection

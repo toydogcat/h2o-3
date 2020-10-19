@@ -26,6 +26,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
+import water.util.TwoDimTable;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -893,6 +894,18 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
     CollectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr,
             depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+  }
+  
+  @Override
+  public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
+    FeatureInteractions featureInteractionMap = this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening);
+    
+    TwoDimTable[][] table = new TwoDimTable[3][];
+    table[0] =  featureInteractionMap.getFeatureInteractions();
+    table[1] = new TwoDimTable[]{featureInteractionMap.getLeafStatisticsTable()};
+    table[2] = featureInteractionMap.getSplitValueHistograms();
+    
+    return table;
   }
 
 

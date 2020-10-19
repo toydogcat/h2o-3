@@ -2118,3 +2118,14 @@ class H2OXGBoostEstimator(H2OEstimator):
             return False
         else:
             return True
+
+    def feature_interaction(self, max_interaction_depth, max_tree_depth, max_deepening):
+        kwargs = {}
+        kwargs["model_id"] = self.model_id
+        kwargs["max_interaction_depth"] = max_interaction_depth
+        kwargs["max_tree_depth"] = max_tree_depth
+        kwargs["max_deepening"] = max_deepening
+
+        json = h2o.api("POST /3/FeatureInteraction", data=kwargs)
+
+        return json['feature_interaction']    

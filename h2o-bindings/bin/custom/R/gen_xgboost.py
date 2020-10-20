@@ -14,6 +14,20 @@ h2o.xgboost.available <- function() {
         return(TRUE)
     }
 }
+
+#' @export
+h2o.xgboost.feature_interaction <- function(model, max_interaction_depth, max_tree_depth, max_deepening) {
+    parms <- list()
+    parms$model_id <- model@model_id
+    parms$max_interaction_depth <- max_interaction_depth
+    parms$max_tree_depth <- max_tree_depth
+    parms$max_deepening <- max_deepening
+
+    json <- .h2o.doSafePOST(urlSuffix = "FeatureInteraction", parms=parms)
+    source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+
+    return(source$feature_interaction)
+}
 """,
 )
 
